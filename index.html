@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="ko" data-lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alt-image · machine — Protocol</title>
+<meta name="description" content="Alt-image — one photograph, two chains of translation. Interactive protocol, machine chain. Hojin Yun, 2026.">
+<style>
+  :root{
+    --bg:#faf9f6; --panel:#ffffff; --ink:#22211e; --ink2:#5c5a53; --ink3:#8d8a80;
+    --line:#dedbd2; --machine:#5B7FD9; --poem:#D98E32;
+    --machine-soft:rgba(91,127,217,.10); --poem-soft:rgba(217,142,50,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#191917; --panel:#20201d; --ink:#e8e6df; --ink2:#a8a59a; --ink3:#7a776d;
+      --line:#3a3934; --machine:#7896E3; --poem:#C07725;
+      --machine-soft:rgba(91,127,217,.16); --poem-soft:rgba(192,119,37,.16);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;word-break:keep-all}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 64px}
+
+  /* language */
+  html[data-lang="ko"] .en{display:none!important}
+  html[data-lang="en"] .ko{display:none!important}
+  .lang{display:flex;gap:0;border:1px solid var(--ink);border-radius:2px;overflow:hidden}
+  .lang button{appearance:none;border:0;background:var(--panel);color:var(--ink);padding:5px 12px;font-size:12px;cursor:pointer;letter-spacing:.08em}
+  .lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+  header{border-bottom:1px solid var(--ink);padding-bottom:18px;margin-bottom:8px}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3)}
+  h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(28px,5vw,44px);margin:.15em 0 .1em}
+  h1 .sub{font-size:.52em;color:var(--ink2);font-family:inherit;display:block;margin-top:.2em}
+  h1 .chain{font-size:.5em;color:var(--ink3);margin-left:.35em;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.04em;vertical-align:baseline}
+  .byline{font-size:13px;color:var(--ink2)}
+  .status{display:inline-block;margin-top:10px;font-size:12px;color:var(--ink2);border:1px solid var(--line);padding:3px 10px;border-radius:20px;font-variant-numeric:tabular-nums}
+  .status b{color:var(--ink)}
+
+  .lede{font-size:15.5px;color:var(--ink);max-width:70ch;margin:20px 0 4px;line-height:1.7}
+
+  h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:22px;margin:0 0 2px}
+  section{margin-top:52px}
+  .num{font-size:11px;letter-spacing:.24em;color:var(--ink3);text-transform:uppercase;display:block;margin-bottom:4px}
+  .cap{font-size:13.5px;color:var(--ink2);max-width:72ch;margin:4px 0 16px}
+
+  /* controls + diagram */
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:14px 0 6px}
+  button.roll{appearance:none;border:1px solid var(--ink);background:var(--panel);color:var(--ink);padding:9px 18px;font-size:14px;cursor:pointer;border-radius:2px}
+  button.roll:hover{background:var(--ink);color:var(--bg)}
+  button.roll:disabled{opacity:.45;cursor:default}
+  .counter{font-size:13px;color:var(--ink2)}
+  .counter b{color:var(--ink);font-weight:600}
+  .hint{font-size:12.5px;color:var(--ink3)}
+  .diagram{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 2px;margin-top:10px}
+  svg{display:block;width:100%;height:auto}
+  svg text{font:13px -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;fill:var(--ink)}
+  svg .lbl{font-size:14px;font-weight:600}
+  svg .small{font-size:11.5px;fill:var(--ink2)}
+  svg .tiny{font-size:10.5px;fill:var(--ink3);letter-spacing:.1em}
+  svg .chain-title{font-size:12px;letter-spacing:.2em;font-weight:600}
+  .node{cursor:pointer}
+  #drift rect.bar:hover{fill:rgba(120,120,120,.08)}
+  .node rect,.node circle{transition:stroke-width .15s, filter .15s}
+  .node:hover rect,.node:focus rect{stroke-width:2.4}
+  .node.active rect{stroke-width:2.6;filter:drop-shadow(0 0 6px rgba(120,120,120,.45))}
+  .flow{transition:opacity .2s}
+  .dim .flow{opacity:.18}
+  .dim .flow.lit{opacity:1;stroke-dasharray:7 5;animation:fdash .55s linear infinite}
+  @keyframes fdash{to{stroke-dashoffset:-12}}
+  .pair{opacity:.5}
+  .pair:hover,.pair:focus-within{opacity:1}
+  .detail{border-left:3px solid var(--ink);background:var(--panel);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 18px;margin-top:14px;min-height:86px;border-radius:0 4px 4px 0}
+  .detail h3{margin:0 0 4px;font-size:14px}
+  .detail p{margin:0;color:var(--ink2);font-size:14px;max-width:78ch}
+  .detail .tag{display:inline-block;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+
+  /* conditions */
+  .conds{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:14px}
+  .cond{padding:16px 18px;background:var(--panel);border-left:1px solid var(--line)}
+  .cond:first-child{border-left:none}
+  .cond.variable{background:var(--machine-soft)}
+  .cond h4{margin:0 0 6px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
+  .cond p{margin:0;font-size:13.5px;line-height:1.65}
+
+  /* charts */
+  .chart-box{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:18px 14px 8px;position:relative}
+  .empty{padding:36px 16px;text-align:center;color:var(--ink3);font-size:13px}
+  .tooltip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:3px;opacity:0;transform:translate(-50%,-110%);max-width:260px;transition:opacity .1s;text-align:left;line-height:1.4}
+  .tooltip{text-align:left;white-space:normal;width:300px;max-width:none}
+  .tooltip .tm{font-size:11px;opacity:.75;margin-bottom:4px;white-space:nowrap}
+  .tooltip .ta{font-size:12px;line-height:1.45;font-family:Georgia,serif}
+  .tooltip .ta b{font-weight:700;color:#ffd27a}
+  .tooltip .tr{font-size:11px;opacity:.7;margin-top:4px;font-family:Georgia,serif;text-decoration:line-through}
+  .tooltip .ti{width:96px;height:75px;background-size:4800px 75px;margin:0 auto 4px;border-radius:2px}
+  .legend{display:flex;gap:18px;font-size:12px;color:var(--ink2);margin:0 0 8px 4px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  details.table{margin-top:10px;font-size:13px;color:var(--ink2)}
+  details.table summary{cursor:pointer}
+  details.table table{border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
+  details.table td,details.table th{border:1px solid var(--line);padding:3px 8px;font-size:12px}
+
+
+  /* stance */
+  .stance{border-left:3px solid var(--machine);padding:6px 0 6px 20px;max-width:68ch}
+  .stance p{margin:0 0 .7em;font-size:15.5px}
+
+  /* exhibition */
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  @media (max-width:700px){.row2{grid-template-columns:1fr}}
+  .sndcard{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px 16px}
+  .sndcard audio{width:100%;margin:8px 0 6px}
+  .sndtag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+  .sndcard p{margin:0;font-size:13px;color:var(--ink2)}
+  .facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 18px;font-size:13.5px;margin:12px 0 0}
+  .facts dt{color:var(--ink3)}
+  .facts dd{margin:0}
+  .simnote{font-size:12px;color:var(--ink3);margin:6px 0 0}
+
+  footer{margin-top:52px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink3);display:grid;gap:6px}
+  footer a{color:var(--ink2)}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  @media print{
+    body{background:#fff;color:#000;font-size:11pt}
+    .lang,.controls,.detail,.more,audio,.hint{display:none!important}
+    section{break-inside:avoid-page;margin-top:28px}
+    .archive li{break-inside:avoid}
+    .pair{opacity:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="top">
+    <div class="kicker">Protocol</div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-set="ko" aria-pressed="true">한국어</button>
+      <button type="button" data-set="en" aria-pressed="false">English</button>
+    </div>
+  </div>
+  <h1>Alt-image<span class="chain">machine</span>
+    <span class="sub ko">— 사진 한 장, 두 개의 번역 사슬</span>
+    <span class="sub en">— one photograph, two chains of translation</span>
+  </h1>
+  <div class="byline">
+    <span class="ko">윤호진 · 사진, 설치 · 2026</span>
+    <span class="en">Hojin Yun · photography, installation · 2026</span>
+  </div>
+  <div class="status" id="status"></div>
+</header>
+
+<!-- 1. SUMMARY -->
+<p class="lede">
+  <span class="ko">생성형 AI 환경에서 이미지는 언어를 통과해 만들어진다. 사진은 문장이 되고, 문장은 다시 이미지가 된다. 이 순환 속에서 사진은 어떤 처지에 놓이는가. 어느 저녁의 빛이 센서에 닿았다는 사실은 이 순환을 건널 수 있는가. 《Alt-image》는 이 질문을 실험으로 다룬다. 2007년 산타모니카에서 찍은 초점 잃은 사진 한 장을 번역 사슬에 50회 통과시킨다. 〈우아한 시체〉의 규약대로 각 참여자는 직전 것만 본다. 사슬은 둘이다. 기계가 alt-text를 쓰는 사슬과 시인이 시를 쓰는 사슬. 같은 사진, 같은 생성기, 같은 주사위. 이 페이지는 그중 기계 사슬을 기록한다. 정거장을 누르면 설명이, 주사위를 던지면 하루치 프로토콜이 돈다.</span>
+  <span class="en">In the generative environment, an image is made by passing through language. A photograph becomes a sentence; the sentence becomes an image again. What becomes of the photograph in this loop? Can the fact that one evening's light once touched a sensor cross it? <i>Alt-image</i> treats the question as an experiment. One out-of-focus photograph, taken in Santa Monica in 2007, is passed through a translation chain fifty times. As in the <i>cadavre exquis</i>, each participant sees only what came just before. There are two chains: one in which a machine writes alt-text, one in which a poet writes a poem. Same photograph, same generator, same die. This page records the machine chain. Click any station for detail — or throw the die to run one day of the protocol.</span>
+</p>
+
+<section id="protocol" style="margin-top:0">
+  <div class="controls">
+    <button class="roll" id="rollBtn"><span class="ko">주사위 던지기 — 한 단계 진행</span><span class="en">Throw the die — run one step</span></button>
+    <div class="counter"><span class="ko">단계</span><span class="en">Step</span> <b id="roundNo">0</b> / 50 · <span class="ko">시드</span><span class="en">seed</span> <b id="seedNo">–</b></div>
+    <div class="hint" id="hint" aria-live="polite"></div>
+  </div>
+
+  <div class="diagram" id="diagram">
+  <svg viewBox="0 0 1120 610" role="img" aria-labelledby="dTitle dDesc">
+    <title id="dTitle">Alt-image, machine — protocol diagram</title>
+    <desc id="dDesc">One photograph enters the machine chain: a vision-language model writes alt-text, and an image generator renders the next image from that sentence alone. A die sets the daily seed, shared with a paired poem chain. Differences between consecutive images and sentences are translated into sound.</desc>
+    <defs>
+      <marker id="am" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="var(--machine)"/></marker>
+      <marker id="ap" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="var(--poem)"/></marker>
+      <marker id="ai" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="var(--ink2)"/></marker>
+      <clipPath id="phclip"><rect x="504" y="14" width="112" height="76" rx="3"/></clipPath>
+    </defs>
+
+    <g class="node" id="n-photo" tabindex="0" role="button" aria-label="photograph">
+      <image href="assets/origin.jpg" x="504" y="14" width="112" height="76" preserveAspectRatio="xMidYMid slice" clip-path="url(#phclip)"/>
+      <rect x="504" y="14" width="112" height="76" rx="3" fill="none" stroke="var(--ink)" stroke-width="1.4"/>
+      <text x="560" y="106" text-anchor="middle" class="lbl"><tspan class="ko">사진 한 장</tspan><tspan class="en">one photograph</tspan></text>
+      <text x="560" y="122" text-anchor="middle" class="small"><tspan class="ko">한 번 입력, 다시 보이지 않음</tspan><tspan class="en">entered once, never shown again</tspan></text>
+    </g>
+
+    <g class="node" id="n-die" tabindex="0" role="button" aria-label="die">
+      <rect x="530" y="168" width="60" height="60" rx="9" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>
+      <g id="pips" fill="var(--ink)"></g>
+      <text x="560" y="250" text-anchor="middle" class="small"><tspan class="ko">매일의 주사위</tspan><tspan class="en">daily die throw</tspan></text>
+      <text x="560" y="265" text-anchor="middle" class="tiny"><tspan class="ko">시드 1–6 · 두 체인 공유</tspan><tspan class="en">SEED 1–6 · SHARED</tspan></text>
+    </g>
+
+    <path class="flow" id="f-photo-l" d="M510 45 C 300 45 125 100 125 194" fill="none" stroke="var(--machine)" stroke-width="1.8" marker-end="url(#am)"/>
+    <path class="flow pair" id="f-photo-r" d="M610 45 C 820 45 815 100 815 194" fill="none" stroke="var(--poem)" stroke-width="1.4" marker-end="url(#ap)"/>
+    <path class="flow" id="f-die-l" d="M560 272 L560 324" fill="none" stroke="var(--ink3)" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#ai)"/>
+    <text x="570" y="302" class="tiny"><tspan class="ko">시드</tspan><tspan class="en">SEED</tspan></text>
+
+    <!-- machine chain -->
+    <text x="210" y="146" text-anchor="middle" class="chain-title" fill="var(--machine)"><tspan class="ko">기계 사슬 · 전시작</tspan><tspan class="en">MACHINE CHAIN · EXHIBITED</tspan></text>
+    <g class="node" id="n-mimg" tabindex="0" role="button" aria-label="image n">
+      <rect x="60" y="200" width="130" height="64" rx="3" fill="var(--machine-soft)" stroke="var(--machine)" stroke-width="1.8"/>
+      <text x="125" y="228" text-anchor="middle" class="lbl"><tspan class="ko">이미지 </tspan><tspan class="en">image </tspan><tspan font-style="italic">n</tspan></text>
+      <text x="125" y="246" text-anchor="middle" class="small"><tspan class="ko">첫 결과, 그대로</tspan><tspan class="en">first result, kept</tspan></text>
+    </g>
+    <g class="node" id="n-alt" tabindex="0" role="button" aria-label="alt-text">
+      <rect x="240" y="200" width="130" height="64" rx="3" fill="var(--panel)" stroke="var(--machine)" stroke-width="1.8"/>
+      <text x="305" y="228" text-anchor="middle" class="lbl">alt-text</text>
+      <text x="305" y="246" text-anchor="middle" class="small"><tspan class="ko">기계가 쓴다</tspan><tspan class="en">the machine writes</tspan></text>
+    </g>
+    <path class="flow" id="f-m1" d="M190 210 C 205 190 225 190 240 210" fill="none" stroke="var(--machine)" stroke-width="1.6" marker-end="url(#am)"/>
+    <path class="flow" id="f-m2" d="M240 256 C 225 276 205 276 190 256" fill="none" stroke="var(--machine)" stroke-width="1.6" marker-end="url(#am)"/>
+    <text x="215" y="184" text-anchor="middle" class="tiny"><tspan class="ko">번역 ① 이미지 → 문장</tspan><tspan class="en">TRANSLATION ① IMAGE → SENTENCE</tspan></text>
+    <text x="215" y="292" text-anchor="middle" class="tiny"><tspan class="ko">번역 ② 문장 → 이미지 n+1</tspan><tspan class="en">TRANSLATION ② SENTENCE → IMAGE N+1</tspan></text>
+    <text x="125" y="316" text-anchor="middle" class="small"><tspan class="ko">× 50단계</tspan><tspan class="en">× 50 steps</tspan></text>
+
+    <!-- poem chain (pair, not exhibited) -->
+    <g class="pair">
+      <text x="910" y="146" text-anchor="middle" class="chain-title" fill="var(--poem)"><tspan class="ko">시 사슬 · 짝 체인, 비전시</tspan><tspan class="en">POEM CHAIN · PAIR, NOT SHOWN</tspan></text>
+      <g class="node" id="n-pimg" tabindex="0" role="button" aria-label="poem chain image">
+        <rect x="750" y="200" width="130" height="64" rx="3" fill="var(--poem-soft)" stroke="var(--poem)" stroke-width="1.4"/>
+        <text x="815" y="228" text-anchor="middle" class="lbl"><tspan class="ko">이미지 </tspan><tspan class="en">image </tspan><tspan font-style="italic">n</tspan></text>
+        <text x="815" y="246" text-anchor="middle" class="small"><tspan class="ko">첫 결과, 그대로</tspan><tspan class="en">first result, kept</tspan></text>
+      </g>
+      <g class="node" id="n-poem" tabindex="0" role="button" aria-label="poem">
+        <rect x="930" y="200" width="130" height="64" rx="3" fill="var(--panel)" stroke="var(--poem)" stroke-width="1.4"/>
+        <text x="995" y="228" text-anchor="middle" class="lbl"><tspan class="ko">시</tspan><tspan class="en">poem</tspan></text>
+        <text x="995" y="246" text-anchor="middle" class="small"><tspan class="ko">시인이 쓴다</tspan><tspan class="en">the poet writes</tspan></text>
+      </g>
+      <path class="flow" id="f-p1" d="M880 210 C 895 190 915 190 930 210" fill="none" stroke="var(--poem)" stroke-width="1.4" marker-end="url(#ap)"/>
+      <path class="flow" id="f-p2" d="M930 256 C 915 276 895 276 880 256" fill="none" stroke="var(--poem)" stroke-width="1.4" marker-end="url(#ap)"/>
+      <g class="node" id="n-mt" tabindex="0" role="button" aria-label="machine translation">
+        <rect x="930" y="330" width="130" height="52" rx="26" fill="var(--panel)" stroke="var(--ink2)" stroke-width="1.3"/>
+        <text x="995" y="352" text-anchor="middle" class="lbl" style="font-size:13px"><tspan class="ko">한 → 영</tspan><tspan class="en">ko → en</tspan></text>
+        <text x="995" y="368" text-anchor="middle" class="small"><tspan class="ko">기계번역</tspan><tspan class="en">machine translation</tspan></text>
+      </g>
+      <path class="flow" id="f-mt" d="M995 264 L995 330" fill="none" stroke="var(--ink2)" stroke-width="1.3" marker-end="url(#ai)"/>
+      <path class="flow" id="f-mt-gen" d="M930 358 C 830 362 740 362 660 360" fill="none" stroke="var(--poem)" stroke-width="1.4" marker-end="url(#ap)"/>
+      <path class="flow" id="f-gen-p" d="M660 384 C 760 414 800 340 812 268" fill="none" stroke="var(--poem)" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ap)"/>
+      <path class="flow" id="f-p-snd" d="M815 264 C 800 430 780 500 690 502" fill="none" stroke="var(--poem)" stroke-width="1.2" stroke-dasharray="2 4"/>
+    </g>
+
+    <!-- generator -->
+    <g class="node" id="n-gen" tabindex="0" role="button" aria-label="generator">
+      <rect x="460" y="330" width="200" height="66" rx="33" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.8"/>
+      <text x="560" y="358" text-anchor="middle" class="lbl"><tspan class="ko">같은 생성기</tspan><tspan class="en">same generator</tspan></text>
+      <text x="560" y="376" text-anchor="middle" class="small"><tspan class="ko">같은 시드 · 문장만 받는다</tspan><tspan class="en">same seed · receives only the sentence</tspan></text>
+    </g>
+    <path class="flow" id="f-alt-gen" d="M305 264 C 305 340 380 356 460 360" fill="none" stroke="var(--machine)" stroke-width="1.6" marker-end="url(#am)"/>
+    <path class="flow" id="f-gen-m" d="M460 384 C 320 420 160 380 125 264" fill="none" stroke="var(--machine)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#am)"/>
+
+    <!-- sound -->
+    <g class="node" id="n-sound" tabindex="0" role="button" aria-label="difference to sound">
+      <rect x="430" y="470" width="260" height="66" rx="3" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="560" y="497" text-anchor="middle" class="lbl"><tspan class="ko">차이 → 소리</tspan><tspan class="en">difference → sound</tspan></text>
+      <text x="560" y="516" text-anchor="middle" class="small"><tspan class="ko">픽셀 차이 = 저음 · 문장 차이 = 클릭</tspan><tspan class="en">pixel difference = low tone · text difference = clicks</tspan></text>
+    </g>
+    <path class="flow" id="f-m-snd" d="M125 264 C 140 430 300 500 430 502" fill="none" stroke="var(--machine)" stroke-width="1.4" marker-end="url(#am)"/>
+    <text x="560" y="568" text-anchor="middle" class="small" style="font-style:italic"><tspan class="ko">작업은 이미지가 아니라 이미지 사이에 있다</tspan><tspan class="en">the work exists not in the images but between them</tspan></text>
+  </svg>
+  </div>
+
+  <div class="detail" id="detail" aria-live="polite">
+    <span class="tag" id="dTag"><span class="ko">정거장</span><span class="en">station</span></span>
+    <h3 id="dHead"><span class="ko">정거장을 눌러보세요</span><span class="en">Click a station</span></h3>
+    <p id="dBody"><span class="ko">다이어그램의 각 상자는 프로토콜의 한 정거장이다.</span><span class="en">Every box in the diagram is a station of the protocol.</span></p>
+  </div>
+
+</section>
+
+<!-- 3. MEASUREMENT -->
+<section id="measure" aria-labelledby="h-measure">
+  <span class="num">01</span>
+  <h2 id="h-measure"><span class="ko">측정된 표류 — 기계 사슬, 50회차</span><span class="en">Measured drift — machine chain, 50 rounds</span></h2>
+  <p class="cap">
+    <span class="ko">위: 생성된 이미지 50장, 각 회차의 평균 색, 그리고 문장 눈금 — 직전 회차의 alt-text와 단어 집합을 비교해, 사라진 단어 하나당 낮은 눈금, 새로 생긴 단어 하나당 높은 눈금. 전시장의 클릭과 같은 계산이다. 어순 변화는 세지 않는다. 막대: 인접한 회차 사이의 평균 절대 픽셀 차이. 픽셀 차이가 0인 회차(=)는 직전 회차와 비트 단위로 같은 이미지다. 막대에 마우스를 올리면 그 회차의 이미지와 alt-text가 보이고, 새로 생긴 단어는 진하게, 사라진 단어는 아래에 따로 표시된다. 모든 회차는 재현 가능하다. 시드는 주사위, 모든 설정은 기록, 파일은 sha256으로 검증.</span>
+    <span class="en">Top: the fifty generated images, the mean colour of each round, and a sentence row — the alt-text compared with the previous round's as a bag of words: a low tick for each word lost, a high tick for each word gained. The same count that drives the clicks in the gallery; word order is not counted. Bars: mean absolute pixel difference between consecutive rounds. A round at zero (=) is bit-for-bit identical to the previous image. Hover any column for the round's image and alt-text: new words in bold, lost words listed beneath. Every round is reproducible: seed from the die, every setting logged, files verified by sha256.</span>
+  </p>
+  <div class="chart-box" id="chartBox">
+    <svg id="drift" viewBox="0 0 1040 348" role="img" aria-label="Film strip of fifty generated images, a mean-colour band, and a bar chart of pixel difference per round."></svg>
+    <div class="tooltip" id="tip"></div>
+  </div>
+  <details class="table">
+    <summary><span class="ko">데이터 표 (1–50회차)</span><span class="en">Data table (rounds 1–50)</span></summary>
+    <div id="tableWrap" style="overflow-x:auto"></div>
+  </details>
+</section>
+
+
+
+
+<!-- 7. EXHIBITION -->
+<section id="exhibition" aria-labelledby="h-exh">
+  <span class="num">02</span>
+  <h2 id="h-exh"><span class="ko">소리 — 하루의 통과를 듣는다</span><span class="en">Sound — the day's passage, heard</span></h2>
+  <p class="cap">
+    <span class="ko">설치 연구(시뮬레이션): 사진은 세 개의 가벽을 가로질러 한 줄로 걸린다. 소리는 벽의 이음새, 벽과 벽 사이의 틈에 선 스피커에서 난다. 작업이 이미지 사이의 틈에 있듯이. 같은 측정값을 두 가지로 옮긴다:</span>
+    <span class="en">Installation study (simulation): the prints run in a single line across a three-segment wall; the sound plays from speakers standing at the seams — in the gaps between the walls, as the work exists in the gaps between the images. Two translations of the same measured differences:</span>
+  </p>
+  <div class="chart-box" style="padding:0;overflow:hidden">
+    <img src="assets/installation-sim.jpg" style="width:100%;display:block"
+      alt="Installation view, simulated: three white wall segments in a gallery, fifty-one small framed prints hung in one continuous line, loudspeakers on the floor at both ends and in the two gaps between the walls.">
+  </div>
+  <div class="row2">
+    <div class="sndcard">
+      <div class="sndtag" style="color:var(--machine)"><span class="ko">A · 저음 — 픽셀 차이</span><span class="en">A · low tone — pixel difference</span></div>
+      <audio controls preload="none" src="assets/low-tone.mp3"></audio>
+      <p><span class="ko">연속한 두 이미지를 흑백으로 바꿔 같은 자리 화소의 밝기 차이를 평균 낸다(0–1). 그 값 하나가 음높이가 된다. 50회차 중 최소값(8회차, 0.020)이 55Hz, 최대값(38회차, 0.214)이 220Hz, 그 사이는 로그 비례. 두 장이 같은 회차는 무음. 음 하나는 3.5초 동안 사라지고, 회차당 6초, 양 끝 스피커에서 첫 장 쪽에서 마지막 장 쪽으로 흐른다. 사인파에 옥타브 배음을 조금 섞은 음색. 이미지가 어떻게 바뀌었는지는 담기지 않고, 얼마나 바뀌었는지만 담긴다.</span><span class="en">Consecutive images are converted to greyscale and the brightness difference of each pixel is averaged (0–1). That single number becomes the pitch: the smallest value of the fifty rounds (round 8, 0.020) is 55 Hz, the largest (round 38, 0.214) is 220 Hz, log-scaled between. A round identical to the previous one is silent. Each tone fades over 3.5 seconds; six seconds per round, in stereo from the speakers at either end, moving from the first print toward the last. A sine with a faint octave above it. Nothing of how the image changed is carried, only how much.</span></p>
+    </div>
+    <div class="sndcard">
+      <div class="sndtag" style="color:var(--ink2)"><span class="ko">B · 클릭 — 단어 차이</span><span class="en">B · clicks — word difference</span></div>
+      <audio controls preload="none" src="assets/clicks.mp3"></audio>
+      <p><span class="ko">연속한 두 alt-text를 단어 집합으로 비교해, 사라진 단어 하나당 낮은 클릭(420Hz), 생긴 단어 하나당 높은 클릭(2600Hz). 회차당 7초. 두 틈의 스피커에서 같은 신호가 난다. 25회차의 한 쌍이 마지막 소리이고, 그 뒤는 침묵이다.</span><span class="en">Consecutive alt-texts compared as bags of words: one low click (420 Hz) for every word lost, one high click (2600 Hz) for every word gained. Seven seconds per round, the same signal from the speakers in both gaps. The pair at round 25 is the last sound; after it, silence.</span></p>
+    </div>
+  </div>
+</section>
+
+<div class="conds" style="margin-top:52px">
+    <div class="cond">
+      <h4><span class="ko">고정한 것</span><span class="en">Held constant</span></h4>
+      <p><span class="ko">출발 사진 · 생성기, 모델, 매개변수 · 그날의 시드 · 50단계 · 모든 문장의 길이 제한</span><span class="en">Starting photograph · generator, models &amp; parameters · the day's seed · 50 steps · a length limit on every text</span></p>
+    </div>
+    <div class="cond">
+      <h4><span class="ko">보증</span><span class="en">The guarantee</span></h4>
+      <p><span class="ko">단계마다 이미지 한 장, 첫 결과 그대로 — <b>아무것도 고르거나 버리지 않는다.</b> 모든 시드와 설정을 기록하고, sha256으로 파일을 검증한다.</span><span class="en">One image per step, first result kept — <b>nothing is selected or discarded.</b> Every seed and setting is logged; files are verified by sha256.</span></p>
+    </div>
+    <div class="cond variable">
+      <h4><span class="ko">우연의 유일한 입구</span><span class="en">The only entry for chance</span></h4>
+      <p><span class="ko">시인의 주사위. 생성기의 무작위성은 언제든 재현할 수 있지만, 던져진 주사위는 되돌릴 수 없다.</span><span class="en">The poet's die. The generator's randomness can be replayed at will; a thrown die cannot be un-thrown.</span></p>
+    </div>
+  </div>
+
+<footer>
+  <span><span class="ko">〈Alt-image〉 연작 · 이미지–텍스트 재귀 번역 실험 (Cadavre Exquis)</span><span class="en">from the series Alt-image · an image–text recursive translation experiment (Cadavre Exquis)</span></span>
+  <span><span class="ko">협업: 시인 윤지양 (시 사슬, 주사위)</span><span class="en">In collaboration with poet Jiyang Yoon (poem chain, die)</span></span>
+  <span><span class="ko">모델: Florence-2 (alt-text) · SDXL (이미지 생성) · opus-mt-ko-en (기계번역) — 모두 노트북에서 로컬 실행 · 2026.8.20 –</span><span class="en">Models: Florence-2 (alt-text) · SDXL (image generation) · opus-mt-ko-en (machine translation) — all run locally on a laptop · from 20 Aug 2026</span></span>
+  <span>© Hojin Yun 윤호진 · <a href="mailto:hojinyunhojin@gmail.com">hojinyunhojin@gmail.com</a></span>
+</footer>
+
+</div>
+<script src="data.js"></script>
+<script>
+(function(){
+  var DATA = window.ALT_DATA || {steps:[],poem:[],done:0,total:50,freezeAt:24,updated:''};
+  var root=document.documentElement;
+
+  /* ---------- language ---------- */
+  function setLang(l){
+    root.setAttribute('data-lang',l); root.setAttribute('lang',l);
+    document.querySelectorAll('.lang button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.set===l)});
+    try{localStorage.setItem('altimage-lang',l)}catch(e){}
+    if(current) show(current.id);
+  }
+  document.querySelectorAll('.lang button').forEach(function(b){b.addEventListener('click',function(){setLang(b.dataset.set)})});
+  var L=function(){return root.getAttribute('data-lang')};
+
+  /* ---------- status ---------- */
+  var st=document.getElementById('status');
+  var fin=DATA.done>=DATA.total;
+  st.innerHTML='<span class="ko">'+(fin?'<b>50회차 완료</b> · 2026.8.20 – 10.11':'진행 <b>'+DATA.done+'</b> / '+DATA.total+' 단계')+' · 업데이트 '+DATA.updated+'</span>'+
+               '<span class="en">'+(fin?'<b>50 rounds complete</b> · 20 Aug – 11 Oct 2026':'Progress <b>'+DATA.done+'</b> / '+DATA.total+' steps')+' · updated '+DATA.updated+'</span>';
+
+  /* ---------- station details ---------- */
+  var D={
+    'n-photo':{ko:['사진','사진 한 장, 한 번만'],en:['the photograph','One photograph, entered once'],
+      bko:'시스템에 단 한 번 보여진다. 이후 모든 단계는 바로 앞 단계만 본다. 원본은 다시 보이지 않는다.',
+      ben:'It is shown to the system a single time. Every later step sees only its immediate predecessor; the original is never shown again.'},
+    'n-die':{ko:['우연','주사위'],en:['chance','The die'],
+      bko:'매일 시인이 주사위를 한 번 던져 그날의 시드(1–6)를 정한다. 같은 시드가 두 체인에 함께 쓰인다. 생성기의 무작위성은 의사난수라 언제든 재현할 수 있지만, 던져진 주사위는 되돌릴 수 없다.',
+      ben:'Each day the poet throws the die once, setting the seed (1–6). The same seed feeds both chains. The generator’s randomness is pseudo-random and replayable; a thrown die cannot be un-thrown.'},
+    'n-mimg':{ko:['기계 사슬','이미지 n'],en:['machine chain','Image n'],
+      bko:'생성된 그대로의 현재 이미지. 첫 결과이며 고르지 않는다. 다음 단계에서 시각-언어 모델이 보는 유일한 것이 된다.',
+      ben:'The current image, kept exactly as generated. First result, no selection. It becomes the only thing the describing model is shown next.'},
+    'n-alt':{ko:['기계 사슬','alt-text — 기계가 쓴다'],en:['machine chain','Alt-text — the machine writes'],
+      bko:'로컬에서 실행되는 오픈 가중치 시각-언어 모델이 직전 이미지에 alt-text를 쓴다. 접근성 언어의 표준 관습을 따르는 묘사다. 기계가 고른 문체가 아니라 학습된 장르다.',
+      ben:'An open-weights vision-language model, run locally, writes alt-text for the previous image, following the standard conventions of descriptive alt-text. Not a style the machine chose, but the genre it was trained in.'},
+    'n-gen':{ko:['공유','같은 생성기'],en:['shared','The same generator'],
+      bko:'같은 이미지 생성 모델이 같은 시드로 두 체인의 문장을 이미지로 만든다. 이전 이미지는 보지 못하고 문장만 받는다. alt-text가 상정하는 수신자의 자리다. 문장이 말하지 않은 것은 다음 이미지에 존재하지 않는다.',
+      ben:'The same image generator renders both chains’ sentences with the same seed. It never sees the previous image; only the sentence arrives — the position alt-text is written for. Whatever the sentence does not say will not exist in the next image.'},
+    'n-sound':{ko:['출력','차이 → 소리'],en:['output','Difference → sound'],
+      bko:'연속한 두 이미지의 평균 픽셀 차이는 저음으로, 연속한 두 문장의 차이는 클릭으로 옮겨진다. 두 소리는 맞추지 않고 각자 반복된다. 25단계부터 클릭은 멎는다.',
+      ben:'The mean pixel difference between consecutive images becomes a low tone; the difference between consecutive sentences becomes clicks. The two loop unsynchronised. From step 25 the clicks stop.'},
+    'n-pimg':{ko:['짝 체인 · 비전시','이미지 n (시 사슬)'],en:['pair chain · not shown','Image n (poem chain)'],
+      bko:'시 사슬의 현재 이미지. 시인은 이미지를 만들지 않는다. 두 체인의 이미지는 모두 같은 기계가 만든다.',
+      ben:'The poem chain’s current image. The poet makes no image; both chains’ images are rendered by the same machine.'},
+    'n-poem':{ko:['짝 체인 · 비전시','시 — 시인이 쓴다'],en:['pair chain · not shown','Poem — the poet writes'],
+      bko:'시인은 직전 이미지만 보고 한국어로 시를 쓴다. 앞선 텍스트는 물려받지 않는다. 이미지 하나, 그것을 보지 못할 수신자, 정해진 길이, 퇴고 없음. alt-text를 쓰는 자리와 같지만 그 관습은 없다.',
+      ben:'The poet sees only the previous image and writes a poem in Korean. No earlier text is inherited. One image, a receiver who will not see it, a fixed length, no revision: the position of an alt-text writer, without the convention.'},
+    'n-mt':{ko:['짝 체인 · 비전시','기계번역 (한 → 영)'],en:['pair chain · not shown','Machine translation (ko → en)'],
+      bko:'오픈 기계번역 모델이 시를 생성기가 읽는 유일한 언어인 영어로 옮긴다. 번역은 손으로 고치지 않는다. 그 손실은 결함이 아니라 파이프라인의 한 칸이다.',
+      ben:'An open translation model carries the poem into English, the only language the generator reads. It is never corrected by hand: its losses are not a defect but one cell of the pipeline.'}
+  };
+  var dTag=document.getElementById('dTag'),dHead=document.getElementById('dHead'),dBody=document.getElementById('dBody');
+  var current=null;
+  function show(id){
+    var el=document.getElementById(id), d=D[id], l=L();
+    if(current)current.classList.remove('active');
+    current=el; el.classList.add('active');
+    dTag.textContent=d[l][0]; dHead.textContent=d[l][1]; dBody.textContent=l==='ko'?d.bko:d.ben;
+  }
+  Object.keys(D).forEach(function(id){
+    var el=document.getElementById(id);
+    el.addEventListener('click',function(){show(id)});
+    el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();show(id);}});
+  });
+
+  try{var saved=localStorage.getItem('altimage-lang'); if(saved==='en'||saved==='ko') setLang(saved);}catch(e){}
+
+  /* ---------- die ---------- */
+  var pipPos={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],
+              5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]};
+  var pips=document.getElementById('pips');
+  function drawPips(n){var h='';pipPos[n].forEach(function(p){h+='<circle cx="'+(560+p[0]*13)+'" cy="'+(198+p[1]*13)+'" r="4.6"/>'});pips.innerHTML=h;}
+  drawPips(1);
+
+  var order=['f-die-l','f-photo-l,f-photo-r','n-alt:f-m1','n-poem:f-p1','n-mt:f-mt','n-gen:f-alt-gen,f-mt-gen','f-gen-m,f-gen-p','n-sound:f-m-snd,f-p-snd'];
+  var hints={ko:['주사위가 두 체인의 시드를 정한다','사진이 들어온다 — 단 한 번','기계가 묘사한다','시인이 쓴다 (짝 체인)','시가 옮겨진다, 읽히지 않은 채','생성기는 문장만 듣는다','새 이미지 두 장 — 첫 결과 그대로','하루의 차이가 소리가 된다'],
+             en:['the die decides for both chains','the photograph enters — once','the machine describes','the poet writes (pair chain)','the poem is carried, unread','the generator hears only the sentences','two new images — first result, kept','the day’s difference becomes sound']};
+  var diagram=document.getElementById('diagram'),btn=document.getElementById('rollBtn'),hint=document.getElementById('hint');
+  var roundNo=0,rolling=false;
+  function litOnly(ids){
+    document.querySelectorAll('.flow').forEach(function(f){f.classList.remove('lit')});
+    ids.forEach(function(i){var e=document.getElementById(i);if(e)e.classList.add('lit')});
+  }
+  btn.addEventListener('click',function(){
+    if(rolling)return; rolling=true; btn.disabled=true; diagram.classList.add('dim');
+    var n=1+Math.floor(Math.random()*6),t=0;
+    var spin=setInterval(function(){
+      drawPips(1+Math.floor(Math.random()*6));
+      if(++t>=8){clearInterval(spin); drawPips(n);
+        document.getElementById('seedNo').textContent=n;
+        roundNo=roundNo%50+1; document.getElementById('roundNo').textContent=roundNo;
+        var step=0;
+        var seq=setInterval(function(){
+          if(step>=order.length){clearInterval(seq);diagram.classList.remove('dim');litOnly([]);hint.textContent='';rolling=false;btn.disabled=false;return;}
+          var part=order[step].split(':'), flows=(part[1]||part[0]).split(',');
+          litOnly(flows);
+          if(part[1]){var node=document.getElementById(part[0]); if(node){node.classList.add('active');setTimeout(function(){node.classList.remove('active')},1200);}}
+          hint.textContent=hints[L()][step]||''; step++;
+        },1300);
+      }
+    },90);
+  });
+
+  /* ---------- charts ---------- */
+  var steps=DATA.steps||[], tip=document.getElementById('tip'), box=document.getElementById('chartBox');
+  function emptyMsg(svg,h){
+    svg.outerHTML='<div class="empty"><span class="ko">데이터 준비 중</span><span class="en">Data in preparation</span></div>';
+  }
+  var drift=document.getElementById('drift');
+  if(!steps.length){ emptyMsg(drift); }
+  else{
+    var N=DATA.total,W=1040,H=348,mL=62,mR=10,mT=110,mB=48,iw=W-mL-mR,ih=H-mT-mB,n=steps.length,bw=iw/N;
+    function words(t){return (t||'').toLowerCase().replace(/[^a-z0-9' ]/g,' ').split(/\s+/).filter(Boolean)}
+    function bag(a){var b={};a.forEach(function(w){b[w]=(b[w]||0)+1});return b}
+    var diffs=steps.map(function(d,i){
+      var cur=words(d.alt); if(i===0) return {removed:[],added:[],addFlags:cur.map(function(){return false})};
+      var prev=bag(words(steps[i-1].alt)), now=bag(cur), removed=[], added=[];
+      Object.keys(prev).forEach(function(w){for(var k=0;k<prev[w]-(now[w]||0);k++)removed.push(w)});
+      Object.keys(now).forEach(function(w){for(var k=0;k<now[w]-(prev[w]||0);k++)added.push(w)});
+      var budget={}; added.forEach(function(w){budget[w]=(budget[w]||0)+1});
+      var flags=cur.map(function(w){if(budget[w]){budget[w]--;return true}return false});
+      return {removed:removed,added:added,addFlags:flags};
+    });
+    function altHtml(d,i){var toks=(d.alt||'').split(/(\s+)/),wi=0,fl=diffs[i].addFlags;return toks.map(function(t){if(!/\S/.test(t))return t;var f=fl[wi++];var e=t.replace(/</g,'&lt;');return f?'<b>'+e+'</b>':e}).join('')}
+    var ymax=Math.max(0.3,Math.max.apply(null,steps.map(function(d){return d.pix||0})));
+    function y(v){return mT+ih*(1-v/ymax)}
+    var s='';
+    s+='<text x="'+(mL-8)+'" y="20" text-anchor="end" style="font-size:10px" fill="var(--ink3)">images</text>';
+    s+='<image href="'+DATA.strip+'" x="'+mL+'" y="8" width="'+(bw*n)+'" height="15.5" preserveAspectRatio="none"/>';
+    s+='<text x="'+(mL-8)+'" y="39" text-anchor="end" style="font-size:10px" fill="var(--ink3)">colour</text>';
+    steps.forEach(function(d,i){s+='<rect class="bar" data-i="'+i+'" x="'+(mL+i*bw)+'" y="29" width="'+(bw-0.7)+'" height="13" fill="'+(DATA.colors[i]||'#888')+'"/>'});
+    s+='<text x="'+(mL-8)+'" y="58" text-anchor="end" style="font-size:10px" fill="var(--ink3)">sentence</text>';
+    steps.forEach(function(d,i){var lo=diffs[i].removed.length, hi=diffs[i].added.length, c=lo+hi; if(!c)return;
+      var x0=mL+i*bw+1.2, span=bw-2.4, k=Math.min(c,14), per=k/c;
+      for(var t=0;t<k;t++){var x=x0+span*(t+0.5)/k, isLo=t<Math.round(lo*per);
+        s+='<line class="bar" data-i="'+i+'" x1="'+x.toFixed(1)+'" y1="'+(isLo?54:48)+'" x2="'+x.toFixed(1)+'" y2="'+(isLo?66:60)+'" stroke="var(--ink)" stroke-width="1.1" stroke-opacity="'+(isLo?0.9:0.55)+'"/>'}});
+    s+='<line x1="'+mL+'" y1="70" x2="'+(mL+bw*n)+'" y2="70" stroke="var(--line)"/>';
+    s+='<text x="'+mL+'" y="'+(mT+ih+40)+'" style="font-size:10px" fill="var(--ink3)">sentence row: low tick = word lost · high tick = word new</text>';
+    [0.1,0.2,0.3].forEach(function(g){
+      s+='<line x1="'+mL+'" y1="'+y(g)+'" x2="'+(W-mR)+'" y2="'+y(g)+'" stroke="var(--line)" stroke-width="1"/>';
+      s+='<text x="'+(mL-8)+'" y="'+(y(g)+4)+'" text-anchor="end" style="font-size:11px" fill="var(--ink3)">'+g.toFixed(1)+'</text>';
+    });
+    steps.forEach(function(d,i){
+      var v=d.pix||0, yy=y(v), same=i>0&&v===0;
+      if(same){ s+='<text x="'+(mL+(i+0.5)*bw)+'" y="'+(mT+ih-3)+'" text-anchor="middle" style="font-size:12px;font-weight:700;pointer-events:none" fill="var(--machine)">=</text>'; }
+      else s+='<rect x="'+(mL+i*bw+1.5)+'" y="'+yy+'" width="'+(bw-3)+'" height="'+(mT+ih-yy)+'" rx="2" fill="var(--machine)" opacity="0.92" style="pointer-events:none"/>';
+    });
+    /* full-height hover zone for every round, drawn last so it catches the pointer */
+    steps.forEach(function(d,i){ s+='<rect class="bar" data-i="'+i+'" x="'+(mL+i*bw)+'" y="4" width="'+bw+'" height="'+(mT+ih-4)+'" fill="transparent"/>'; });
+    s+='<text x="'+(W-mR)+'" y="'+(mT+ih+40)+'" text-anchor="end" style="font-size:10px" fill="var(--ink3)">= identical image to the previous round (sha256 match)</text>';
+    [1,10,20,30,40,50].forEach(function(r){s+='<text x="'+(mL+(r-0.5)*bw)+'" y="'+(mT+ih+18)+'" text-anchor="middle" style="font-size:11px" fill="var(--ink3)">'+r+'</text>'});
+    drift.innerHTML=s;
+    drift.addEventListener('mousemove',function(e){
+      var t=e.target; if(!(t.classList&&t.classList.contains('bar'))){tip.style.opacity=0;return;}
+      var i=+t.getAttribute('data-i'), d=steps[i], r=box.getBoundingClientRect();
+      tip.style.left=(e.clientX-r.left)+'px'; tip.style.top=(e.clientY-r.top)+'px';
+      tip.innerHTML='<div class="ti" style="background-image:url('+DATA.strip+');background-position:-'+(i*96)+'px 0"></div><div class="tm">round '+d.n+' · seed '+d.seed+' · '+(i>0&&!d.pix?'identical image':'Δpx '+(d.pix||0).toFixed(3))+'</div><div class="tm">−'+diffs[i].removed.length+' words · +'+diffs[i].added.length+' words'+(i>0&&!(diffs[i].removed.length+diffs[i].added.length)?' · no clicks':'')+'</div><div class="ta">'+altHtml(d,i)+'</div>'+(diffs[i].removed.length?'<div class="tr">− '+diffs[i].removed.join(', ')+'</div>':'');
+      var fx=(e.clientX-r.left)/r.width; tip.style.transform=fx>0.65?'translate(-100%,-104%)':fx<0.35?'translate(0,-104%)':'translate(-50%,-104%)';
+      tip.style.opacity=1;
+    });
+    drift.addEventListener('mouseleave',function(){tip.style.opacity=0});
+    var th='<table><tr><th>round</th>',tp='<tr><th>seed</th>',tx='<tr><th>Δ</th>';
+    steps.forEach(function(d){th+='<td>'+d.n+'</td>';tp+='<td>'+(d.seed||'')+'</td>';tx+='<td>'+(d.pix||0).toFixed(3)+'</td>'});
+    document.getElementById('tableWrap').innerHTML=th+'</tr>'+tp+'</tr>'+tx+'</tr></table>';
+  }
+
+})();
+</script>
+</body>
+</html>
